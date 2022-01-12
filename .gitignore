@@ -1,0 +1,9 @@
+__pycache__/
+selenium/
+*.txt
+*.xls
+*.xls#
+*.yml
+*.db
+*.csv
+*.csv#
