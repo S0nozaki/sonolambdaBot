@@ -1,4 +1,3 @@
-from selenium.webdriver.firefox import service
 from telegram.ext import Updater, CommandHandler
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
@@ -14,6 +13,7 @@ with open("config.yml", "r") as file_descriptor:
     bot_token = config['bot_token']
     driver_path = config['driver_path']
     log_path = config['selenium_log_path']
+    stock_exchanges = config['stock_exchanges']
 
 web_service = Service(executable_path=driver_path, log_path=log_path)
 
@@ -37,37 +37,46 @@ def reply(message, response):
     message.reply_text(response)
 
 
-def get_symbol_exchange(symbol):
-    URL = 'https://symbol-search.tradingview.com/symbol_search/?text=' + \
-        symbol+'&hl=1&exchange=&lang=es&type=&domain=production'
-    response = requests.get(URL).json()
-    if not response:
-        return ""
-    return response[0]['exchange']
+def get_symbol_exchanges(symbol):
+    exchanges = []
+    for exchange in stock_exchanges:
+        URL = 'https://symbol-search.tradingview.com/symbol_search/?text=' + \
+            symbol + '&hl=1&exchange=' + exchange + '&lang=es&type=&domain=production'
+        response = requests.get(URL).json()
+        if response:
+            exchanges.append((response[0]['symbol'].strip(
+                "<em>/"), response[0]['exchange']))
+    return exchanges
+
+
+def get_symbol_data(exchange, symbol):
+    options = Options()
+    options.headless = True
+    driver = webdriver.Firefox(
+        options=options, service=web_service)
+    driver.implicitly_wait(10)
+    driver.get(
+        "https://es.tradingview.com/chart/?symbol=" + exchange + "%3A" + symbol)
+    time.sleep(2)
+    price = driver.find_elements(By.CLASS_NAME,
+                                 "valueValue-1WIwNaDF")[4].get_attribute("innerText")
+    delta = driver.find_elements(By.CLASS_NAME,
+                                 "valueValue-1WIwNaDF")[7].get_attribute("innerText").split(' ')[1].strip("()")
+    driver.close()
+    return {'symbol': symbol, 'exchange': exchange, 'price': price, 'delta': delta}
 
 
 def coti(update, context):
     final_response = ""
-    tick = update.message.text.split(' ')[1].upper()
-    exchange = get_symbol_exchange(tick)
-    if not exchange:
+    symbol = update.message.text.split(' ')[1].upper()
+    symbol_exchanges = get_symbol_exchanges(symbol)
+    if not symbol_exchanges:
         final_response = "No se encuentra el ticker en ningun exchange"
     else:
-        options = Options()
-        options.headless = True
-        driver = webdriver.Firefox(
-            options=options, service=web_service)
-        driver.implicitly_wait(10)
-        driver.get(
-            "https://es.tradingview.com/chart/?symbol=" + exchange + "%3A" + tick)
-        time.sleep(2)
-        current = driver.find_elements(By.CLASS_NAME,
-                                       "valueValue-1WIwNaDF")[4].get_attribute("innerText")
-        delta = driver.find_elements(By.CLASS_NAME,
-                                     "valueValue-1WIwNaDF")[7].get_attribute("innerText").split(' ')[1].strip("()")
-        driver.close()
-        emoji = emoji_picker(delta)
-        final_response = f"{tick} ({exchange}) {current} ({delta}) {emoji}"
+        for symbol, exchange in symbol_exchanges:
+            data = get_symbol_data(exchange, symbol)
+            emoji = emoji_picker(data['delta'])
+            final_response += f"\n{symbol} ({exchange}) {data['price']} ({data['delta']}) {emoji}"
     reply(update.message, final_response)
 
 
