@@ -81,8 +81,8 @@ def get_symbol_exchanges(symbol):
             symbol + '&hl=1&exchange=' + exchange + '&lang=es&type=&domain=production'
         response = requests.get(URL).json()
         if response:
-            exchanges.append((response[0]['symbol'].strip(
-                "<em>/"), response[0]['exchange']))
+            exchanges.append((response[0]['symbol'].translate(
+                str.maketrans(dict.fromkeys('</em>'))), response[0]['exchange']))
     return exchanges
 
 
@@ -144,15 +144,70 @@ def get_crypto_pairs():
     return symbols
 
 
-def crypto(update, context):
-    tick = update.message.text.split(' ')[1].upper()
-    price_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=' + tick
+def get_crypto_data(symbol):
+    price_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=' + symbol
     json = requests.get(price_URL).json()
-    daily_delta_URL = 'https://api.binance.com/api/v3/ticker/24hr?symbol=' + tick
+    daily_delta_URL = 'https://api.binance.com/api/v3/ticker/24hr?symbol=' + symbol
     json['delta'] = requests.get(daily_delta_URL).json()['priceChangePercent']
     emoji = emoji_picker(json['delta'])
-    final_response = f"{json['symbol']} {json['price']} ({json['delta']}%) {emoji}"
-    reply(update.message, final_response)
+    return f"\n{json['symbol']} {json['price']} ({json['delta']}%) {emoji}"
+
+
+def crypto(update, context):
+    symbol = update.message.text.split(' ')[1].upper()
+    reply(update.message, get_crypto_data(symbol))
+
+
+def update_wallet(id, symbol, type):
+    conn = sqlite3.connect(db)
+    c = conn.cursor()
+    c.execute("CREATE TABLE if not exists wallet(id INT, symbol TEXT, type TEXT)")
+    c.execute(
+        f"SELECT * FROM wallet WHERE id == '{id}' AND symbol == '{symbol}'")
+    is_symbol_tracked = c.fetchall()
+    if is_symbol_tracked:
+        c.execute(
+            f"DELETE FROM wallet WHERE id == '{id}' AND symbol == '{symbol}'")
+    else:
+        c.execute("INSERT INTO wallet(id, symbol, type) VALUES(?, ?, ?)", [
+                  id, symbol, type])
+    conn.commit()
+    conn.close()
+
+
+def check_wallet(id):
+    conn = sqlite3.connect(db)
+    c = conn.cursor()
+    c.execute(f"SELECT * FROM wallet WHERE id == '{id}'")
+    symbols_tracked = c.fetchall()
+    conn.commit()
+    conn.close()
+    return symbols_tracked
+
+
+def wallet(update, context):
+    user_id = update.message.from_user.id
+    user_message = update.message.text.split(' ')
+    if len(user_message) == 1:
+        symbols_tracked = check_wallet(user_id)
+        response = ""
+        for id, symbol, type in symbols_tracked:
+            if type == "crypto":
+                response += get_crypto_data(symbol)
+            else:
+                response += get_stock_data(symbol)
+        reply(update.message, response)
+    else:
+        symbol_to_modify = user_message[1].upper()
+        if is_crypto(symbol_to_modify):
+            update_wallet(user_id, symbol_to_modify, "crypto")
+            reply(update.message, f"Crypto {symbol_to_modify} modificada!")
+        elif get_symbol_exchanges(symbol_to_modify):
+            update_wallet(user_id, symbol_to_modify, "stock")
+            reply(update.message, f"Stock {symbol_to_modify} modificada!")
+        else:
+            reply(update.message,
+                  f"No se pudo añadir {symbol_to_modify} ya que no existe en ningún exchange")
 
 
 def start(update, context):
@@ -218,6 +273,7 @@ def main():
     updater.dispatcher.add_handler(CommandHandler("ggal", ggal))
     updater.dispatcher.add_handler(CommandHandler("coti", coti))
     updater.dispatcher.add_handler(CommandHandler("crypto", crypto))
+    updater.dispatcher.add_handler(CommandHandler("wallet", wallet))
 
     updater.start_polling()
     print("Listening")
