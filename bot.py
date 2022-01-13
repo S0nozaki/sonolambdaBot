@@ -3,10 +3,12 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
+from datetime import date
 import inspect
 import requests
 import time
 import yaml
+import sqlite3
 
 with open("config.yml", "r") as file_descriptor:
     config = yaml.safe_load(file_descriptor)
@@ -14,8 +16,43 @@ with open("config.yml", "r") as file_descriptor:
     driver_path = config['driver_path']
     log_path = config['selenium_log_path']
     stock_exchanges = config['stock_exchanges']
+    db = config['db']
 
 web_service = Service(executable_path=driver_path, log_path=log_path)
+
+
+def is_db_updated(date):
+    conn = sqlite3.connect(db)
+    c = conn.cursor()
+    c.execute(f"SELECT * FROM updated WHERE date == '{date}'")
+    result = c.fetchall()
+    conn.close()
+    return bool(result)
+
+
+def update_crypto_db():
+    conn = sqlite3.connect(db)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE if not exists pairs(symbol TEXT)''')
+    c.execute('''DELETE FROM pairs''')
+    pairs = get_crypto_pairs()
+    for pair in pairs:
+        c.execute("INSERT INTO pairs(symbol) VALUES(?)", [pair])
+    c.execute('''CREATE TABLE if not exists updated(date TEXT)''')
+    c.execute('''DELETE FROM updated''')
+    today = date.today().strftime("%d/%m/%Y")
+    c.execute("INSERT INTO updated(date) VALUES(?)", [today])
+    conn.commit()
+    conn.close()
+
+
+def is_crypto(symbol):
+    conn = sqlite3.connect(db)
+    c = conn.cursor()
+    c.execute(f"SELECT * FROM pairs WHERE symbol == '{symbol}'")
+    result = c.fetchall()
+    conn.close()
+    return bool(result)
 
 
 def get_user_name(user):
@@ -49,7 +86,7 @@ def get_symbol_exchanges(symbol):
     return exchanges
 
 
-def get_symbol_data(exchange, symbol):
+def scrap_symbol_data(exchange, symbol):
     options = Options()
     options.headless = True
     driver = webdriver.Firefox(
@@ -66,18 +103,25 @@ def get_symbol_data(exchange, symbol):
     return {'symbol': symbol, 'exchange': exchange, 'price': price, 'delta': delta}
 
 
-def coti(update, context):
-    final_response = ""
-    symbol = update.message.text.split(' ')[1].upper()
+def get_stock_data(symbol):
+    response = ""
     symbol_exchanges = get_symbol_exchanges(symbol)
     if not symbol_exchanges:
-        final_response = "No se encuentra el ticker en ningun exchange"
+        response = "No se encuentra el ticker en ningun exchange"
     else:
         for symbol, exchange in symbol_exchanges:
-            data = get_symbol_data(exchange, symbol)
+            data = scrap_symbol_data(exchange, symbol)
             emoji = emoji_picker(data['delta'])
-            final_response += f"\n{symbol} ({exchange}) {data['price']} ({data['delta']}) {emoji}"
-    reply(update.message, final_response)
+            response += f"\n{symbol} ({exchange}) {data['price']} ({data['delta']}) {emoji}"
+    return response
+
+
+def coti(update, context):
+    symbol = update.message.text.split(' ')[1].upper()
+    if is_crypto(symbol):
+        crypto(update, context)
+    else:
+        reply(update.message, get_stock_data(symbol))
 
 
 def emoji_picker(price_change):
@@ -91,8 +135,16 @@ def emoji_picker(price_change):
     return emoji
 
 
+def get_crypto_pairs():
+    symbol_pairs_URL = 'https://api.binance.com/api/v3/exchangeInfo'
+    symbols = []
+    json = requests.get(symbol_pairs_URL).json()
+    for pair in json['symbols']:
+        symbols.append(pair['symbol'])
+    return symbols
+
+
 def crypto(update, context):
-    final_response = ""
     tick = update.message.text.split(' ')[1].upper()
     price_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=' + tick
     json = requests.get(price_URL).json()
