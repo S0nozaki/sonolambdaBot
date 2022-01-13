@@ -4,7 +4,6 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 import inspect
 import requests
 import time
@@ -31,6 +30,11 @@ def log(message, response):
     print(message.date)
     print(str(user['id']) + " " + name + ": " + message.text)
     print(response)
+
+
+def reply(message, response):
+    log(message, response)
+    message.reply_text(response)
 
 
 def get_symbol_exchange(symbol):
@@ -64,8 +68,7 @@ def coti(update, context):
         driver.close()
         emoji = emoji_picker(delta)
         final_response = f"{tick} ({exchange}) {current} ({delta}) {emoji}"
-    log(update.message, final_response)
-    update.message.reply_text(final_response)
+    reply(update.message, final_response)
 
 
 def emoji_picker(price_change):
@@ -88,13 +91,12 @@ def crypto(update, context):
     json['delta'] = requests.get(daily_delta_URL).json()['priceChangePercent']
     emoji = emoji_picker(json['delta'])
     final_response = f"{json['symbol']} {json['price']} ({json['delta']}%) {emoji}"
-    log(update.message, final_response)
-    update.message.reply_text(final_response)
+    reply(update.message, final_response)
 
 
 def start(update, context):
     name = get_user_name(update.message.from_user)
-    update.message.reply_text(f"Bienvenido {name}!")
+    reply(update.message, f"Bienvenido {name}!")
 
 
 def help(update, context):
@@ -108,7 +110,7 @@ def help(update, context):
                         /ggal - Cotización del ticker GGAL
                         /hola Te saluda :D
                     """)
-    update.message.reply_text(help_message)
+    reply(update.message, help_message)
 
 
 def dolar(update, context):
@@ -127,12 +129,12 @@ def dolar(update, context):
                     Compra {compra}   Venta {venta}
                 """)
             text += '\n'
-    update.message.reply_text(text)
+    reply(update.message, text)
 
 
 def hola(update, context):
     name = get_user_name(update.message.from_user)
-    update.message.reply_text(f"Hola {name}! lindo día para comprar PAMPA.")
+    reply(update.message, f"Hola {name}! lindo día para comprar PAMPA.")
 
 
 def pampa(update, context):
