@@ -8,7 +8,9 @@ import inspect
 import requests
 import time
 import yaml
-import sqlite3
+
+# local imports
+from models import *
 
 with open("config.yml", "r") as file_descriptor:
     config = yaml.safe_load(file_descriptor)
@@ -16,42 +18,36 @@ with open("config.yml", "r") as file_descriptor:
     driver_path = config['driver_path']
     log_path = config['selenium_log_path']
     stock_exchanges = config['stock_exchanges']
-    db = config['db']
 
 web_service = Service(executable_path=driver_path, log_path=log_path)
 
 
-def is_db_updated(date):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
-    c.execute(f"SELECT * FROM updated WHERE date == '{date}'")
-    result = c.fetchall()
-    conn.close()
+@db_session
+def is_db_updated():
+    today = date.today().strftime("%d/%m/%Y")
+    result = select(p.date for p in Updated if p.date == today).first()
     return bool(result)
 
 
+def reset_table_data(table):
+    db.drop_table(table, if_exists=True, with_all_data=True)
+    db.create_tables()
+
+
 def update_crypto_db():
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE if not exists pairs(symbol TEXT)''')
-    c.execute('''DELETE FROM pairs''')
+    reset_table_data(Pairs)
     pairs = get_crypto_pairs()
-    for pair in pairs:
-        c.execute("INSERT INTO pairs(symbol) VALUES(?)", [pair])
-    c.execute('''CREATE TABLE if not exists updated(date TEXT)''')
-    c.execute('''DELETE FROM updated''')
-    today = date.today().strftime("%d/%m/%Y")
-    c.execute("INSERT INTO updated(date) VALUES(?)", [today])
-    conn.commit()
-    conn.close()
+    with db_session:
+        for pair in pairs:
+            Pairs(symbol=pair)
+        delete(p for p in Updated)
+        today = date.today().strftime("%d/%m/%Y")
+        Updated(date=today)
 
 
+@db_session
 def is_crypto(symbol):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
-    c.execute(f"SELECT * FROM pairs WHERE symbol == '{symbol}'")
-    result = c.fetchall()
-    conn.close()
+    result = select(p.symbol for p in Pairs if p.symbol == symbol).first()
     return bool(result)
 
 
@@ -158,30 +154,20 @@ def crypto(update, context):
     reply(update.message, get_crypto_data(symbol))
 
 
+@db_session
 def update_wallet(id, symbol, type):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
-    c.execute("CREATE TABLE if not exists wallet(id INT, symbol TEXT, type TEXT)")
-    c.execute(
-        f"SELECT * FROM wallet WHERE id == '{id}' AND symbol == '{symbol}'")
-    is_symbol_tracked = c.fetchall()
+    is_symbol_tracked = select(
+        p for p in Wallet if p.user_id == id and p.symbol == symbol).first()
     if is_symbol_tracked:
-        c.execute(
-            f"DELETE FROM wallet WHERE id == '{id}' AND symbol == '{symbol}'")
+        delete(p for p in Wallet if p.user_id == id and p.symbol == symbol)
     else:
-        c.execute("INSERT INTO wallet(id, symbol, type) VALUES(?, ?, ?)", [
-                  id, symbol, type])
-    conn.commit()
-    conn.close()
+        Wallet(user_id=id, symbol=symbol, type=type)
 
 
+@db_session
 def check_wallet(id):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
-    c.execute(f"SELECT * FROM wallet WHERE id == '{id}'")
-    symbols_tracked = c.fetchall()
-    conn.commit()
-    conn.close()
+    symbols_tracked = select((p.symbol, p.type)
+                             for p in Wallet if p.user_id == id)[:]
     return symbols_tracked
 
 
@@ -191,7 +177,7 @@ def wallet(update, context):
     if len(user_message) == 1:
         symbols_tracked = check_wallet(user_id)
         response = ""
-        for id, symbol, type in symbols_tracked:
+        for symbol, type in symbols_tracked:
             if type == "crypto":
                 response += get_crypto_data(symbol)
             else:
