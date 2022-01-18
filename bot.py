@@ -9,7 +9,6 @@ import time
 import yaml
 
 # local imports
-from models import *
 from controller import *
 
 with open("config.yml", "r") as file_descriptor:
@@ -87,6 +86,11 @@ def coti(update, context):
     symbol = update.message.text.split(' ')[1].upper()
     if is_crypto(symbol):
         crypto(update, context)
+    elif not is_db_updated():
+        reset_table_data(Pairs)
+        update_crypto_db(get_crypto_pairs())
+        print("DB updated")
+        coti(update, context)
     else:
         reply(update.message, get_stock_data(symbol))
 
