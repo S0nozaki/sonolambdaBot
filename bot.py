@@ -3,7 +3,6 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
-from datetime import date
 import inspect
 import requests
 import time
@@ -11,6 +10,7 @@ import yaml
 
 # local imports
 from models import *
+from controller import *
 
 with open("config.yml", "r") as file_descriptor:
     config = yaml.safe_load(file_descriptor)
@@ -20,35 +20,6 @@ with open("config.yml", "r") as file_descriptor:
     stock_exchanges = config['stock_exchanges']
 
 web_service = Service(executable_path=driver_path, log_path=log_path)
-
-
-@db_session
-def is_db_updated():
-    today = date.today().strftime("%d/%m/%Y")
-    result = select(p.date for p in Updated if p.date == today).first()
-    return bool(result)
-
-
-def reset_table_data(table):
-    db.drop_table(table, if_exists=True, with_all_data=True)
-    db.create_tables()
-
-
-def update_crypto_db():
-    reset_table_data(Pairs)
-    pairs = get_crypto_pairs()
-    with db_session:
-        for pair in pairs:
-            Pairs(symbol=pair)
-        delete(p for p in Updated)
-        today = date.today().strftime("%d/%m/%Y")
-        Updated(date=today)
-
-
-@db_session
-def is_crypto(symbol):
-    result = select(p.symbol for p in Pairs if p.symbol == symbol).first()
-    return bool(result)
 
 
 def get_user_name(user):
@@ -152,23 +123,6 @@ def get_crypto_data(symbol):
 def crypto(update, context):
     symbol = update.message.text.split(' ')[1].upper()
     reply(update.message, get_crypto_data(symbol))
-
-
-@db_session
-def update_wallet(id, symbol, type):
-    is_symbol_tracked = select(
-        p for p in Wallet if p.user_id == id and p.symbol == symbol).first()
-    if is_symbol_tracked:
-        delete(p for p in Wallet if p.user_id == id and p.symbol == symbol)
-    else:
-        Wallet(user_id=id, symbol=symbol, type=type)
-
-
-@db_session
-def check_wallet(id):
-    symbols_tracked = select((p.symbol, p.type)
-                             for p in Wallet if p.user_id == id)[:]
-    return symbols_tracked
 
 
 def wallet(update, context):
