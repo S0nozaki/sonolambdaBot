@@ -83,16 +83,22 @@ def get_stock_data(symbol):
 
 
 def coti(update, context):
-    symbol = update.message.text.split(' ')[1].upper()
-    if is_crypto(symbol):
-        crypto(update, context)
-    elif not is_db_updated():
-        reset_table_data(Pairs)
-        update_crypto_db(get_crypto_pairs())
-        print("DB updated")
-        coti(update, context)
-    else:
-        reply(update.message, get_stock_data(symbol))
+    response = ""
+    symbols = update.message.text.upper().split(' ')[1:]
+    for symbol in symbols:
+        if is_crypto(symbol):
+            response += get_crypto_data(symbol)
+        elif not is_db_updated():
+            reset_table_data(Pairs)
+            update_crypto_db(get_crypto_pairs())
+            print("DB updated")
+            if is_crypto(symbol):
+                response += get_crypto_data(symbol)
+            else:
+                response += get_stock_data(symbol)
+        else:
+            response += get_stock_data(symbol)
+    reply(update.message, response)
 
 
 def emoji_picker(price_change):
@@ -124,14 +130,9 @@ def get_crypto_data(symbol):
     return f"\n{json['symbol']} {json['price']} ({json['delta']}%) {emoji}"
 
 
-def crypto(update, context):
-    symbol = update.message.text.split(' ')[1].upper()
-    reply(update.message, get_crypto_data(symbol))
-
-
 def wallet(update, context):
     user_id = update.message.from_user.id
-    user_message = update.message.text.split(' ')
+    user_message = update.message.text.upper().split(' ')
     if len(user_message) == 1:
         symbols_tracked = check_wallet(user_id)
         response = ""
@@ -142,16 +143,15 @@ def wallet(update, context):
                 response += get_stock_data(symbol)
         reply(update.message, response)
     else:
-        symbol_to_modify = user_message[1].upper()
-        if is_crypto(symbol_to_modify):
-            update_wallet(user_id, symbol_to_modify, "crypto")
-            reply(update.message, f"Crypto {symbol_to_modify} modificada!")
-        elif get_symbol_exchanges(symbol_to_modify):
-            update_wallet(user_id, symbol_to_modify, "stock")
-            reply(update.message, f"Stock {symbol_to_modify} modificada!")
-        else:
-            reply(update.message,
-                  f"No se pudo añadir {symbol_to_modify} ya que no existe en ningún exchange")
+        for symbol_to_modify in user_message[1:]:
+            if is_crypto(symbol_to_modify):
+                update_wallet(user_id, symbol_to_modify, "crypto")
+            elif get_symbol_exchanges(symbol_to_modify):
+                update_wallet(user_id, symbol_to_modify, "stock")
+            else:
+                reply(update.message,
+                      f"No se pudo añadir {symbol_to_modify} ya que no existe en ningún exchange")
+        reply(update.message, f'Modificaciones finalizadas!')
 
 
 def start(update, context):
@@ -165,7 +165,6 @@ def help(update, context):
                         /help - Lista los comandos disponibles
                         /dolar - Te tira las cotizaciones del dolar
                         /coti {ticker} - Cotización del ticker
-                        /crypto {cryptopar} - Cotización del par crypto
                         /pampa - Cotización del ticker PAMP
                         /ggal - Cotización del ticker GGAL
                         /hola Te saluda :D
@@ -216,7 +215,6 @@ def main():
     updater.dispatcher.add_handler(CommandHandler("pampa", pampa))
     updater.dispatcher.add_handler(CommandHandler("ggal", ggal))
     updater.dispatcher.add_handler(CommandHandler("coti", coti))
-    updater.dispatcher.add_handler(CommandHandler("crypto", crypto))
     updater.dispatcher.add_handler(CommandHandler("wallet", wallet))
 
     updater.start_polling()
