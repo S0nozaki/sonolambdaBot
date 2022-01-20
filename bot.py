@@ -3,22 +3,25 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
+from dotenv import load_dotenv
+import os
+import json
 import inspect
 import requests
 import time
-import yaml
 
 # local imports
 from controller import *
 
-with open("config.yml", "r") as file_descriptor:
-    config = yaml.safe_load(file_descriptor)
-    bot_token = config['bot_token']
-    driver_path = config['driver_path']
-    log_path = config['selenium_log_path']
-    stock_exchanges = config['stock_exchanges']
 
-web_service = Service(executable_path=driver_path, log_path=log_path)
+load_dotenv()
+
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+DRIVER_PATH = os.getenv('DRIVER_PATH')
+LOG_PATH = os.getenv('SELENIUM_LOG_PATH')
+STOCK_EXCHANGES = json.loads(os.getenv('STOCK_EXCHANGES'))
+
+web_service = Service(executable_path=DRIVER_PATH, log_path=LOG_PATH)
 
 
 def get_user_name(user):
@@ -42,7 +45,7 @@ def reply(message, response):
 
 def get_symbol_exchanges(symbol):
     exchanges = []
-    for exchange in stock_exchanges:
+    for exchange in STOCK_EXCHANGES:
         URL = 'https://symbol-search.tradingview.com/symbol_search/?text=' + \
             symbol + '&hl=1&exchange=' + exchange + '&lang=es&type=&domain=production'
         response = requests.get(URL).json()
@@ -207,7 +210,7 @@ def ggal(update, context):
 
 
 def main():
-    updater = Updater(bot_token, use_context=True)
+    updater = Updater(BOT_TOKEN, use_context=True)
     updater.dispatcher.add_handler(CommandHandler("start", start))
     updater.dispatcher.add_handler(CommandHandler("help", help))
     updater.dispatcher.add_handler(CommandHandler("hola", hola))

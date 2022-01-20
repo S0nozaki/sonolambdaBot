@@ -7,5 +7,6 @@ selenium/
 *.db
 *.csv
 *.csv#
+*.env
 
 tester.py

@@ -1,13 +1,15 @@
 #!/usr/bin/python3
 from pony.orm import *
-import yaml
+from dotenv import load_dotenv
+import os
 
-with open("config.yml", "r") as file_descriptor:
-    config = yaml.safe_load(file_descriptor)
-    db_user = config['db_user']
-    db_pass = config['db_pass']
-    db_host = config['db_host']
-    db_name = config['db_name']
+
+load_dotenv()
+
+DB_USER = os.getenv('DB_USER')
+DB_PASS = os.getenv('DB_PASS')
+DB_HOST = os.getenv('DB_HOST')
+DB_NAME = os.getenv('DB_NAME')
 
 db = Database()
 
@@ -26,6 +28,6 @@ class Wallet(db.Entity):
     type = Required(str)
 
 
-db.bind(provider='postgres', user=db_user,
-        password=db_pass, host=db_host, database=db_name)
+db.bind(provider='postgres', user=DB_USER,
+        password=DB_PASS, host=DB_HOST, database=DB_NAME)
 db.generate_mapping(create_tables=True)
