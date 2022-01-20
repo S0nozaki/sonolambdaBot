@@ -2,14 +2,16 @@
 from pony.orm import *
 from dotenv import load_dotenv
 import os
-
+import re
 
 load_dotenv()
 
-DB_USER = os.getenv('DB_USER')
-DB_PASS = os.getenv('DB_PASS')
-DB_HOST = os.getenv('DB_HOST')
-DB_NAME = os.getenv('DB_NAME')
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+pattern = "[:/@]"
+DB_TYPE, DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME = re.split(
+    pattern, DATABASE_URL.replace("://", "/"))
+
 
 db = Database()
 
@@ -28,6 +30,6 @@ class Wallet(db.Entity):
     type = Required(str)
 
 
-db.bind(provider='postgres', user=DB_USER,
+db.bind(provider=DB_TYPE, user=DB_USER,
         password=DB_PASS, host=DB_HOST, database=DB_NAME)
 db.generate_mapping(create_tables=True)
