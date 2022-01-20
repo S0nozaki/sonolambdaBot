@@ -1,7 +1,7 @@
 from telegram.ext import Updater, CommandHandler
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from dotenv import load_dotenv
 import os
@@ -17,11 +17,11 @@ from controller import *
 load_dotenv()
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
+CHROME_PATH = os.getenv('CHROME_PATH')
 DRIVER_PATH = os.getenv('DRIVER_PATH')
-LOG_PATH = os.getenv('SELENIUM_LOG_PATH')
 STOCK_EXCHANGES = json.loads(os.getenv('STOCK_EXCHANGES'))
 
-web_service = Service(executable_path=DRIVER_PATH, log_path=LOG_PATH)
+web_service = Service(executable_path=DRIVER_PATH, log_path=None)
 
 
 def get_user_name(user):
@@ -58,7 +58,8 @@ def get_symbol_exchanges(symbol):
 def scrap_symbol_data(exchange, symbol):
     options = Options()
     options.headless = True
-    driver = webdriver.Firefox(
+    options.binary_location = CHROME_PATH
+    driver = webdriver.Chrome(
         options=options, service=web_service)
     driver.implicitly_wait(10)
     driver.get(
