@@ -4,7 +4,10 @@ import yaml
 
 with open("config.yml", "r") as file_descriptor:
     config = yaml.safe_load(file_descriptor)
-    db_path = config['db_path']
+    db_user = config['db_user']
+    db_pass = config['db_pass']
+    db_host = config['db_host']
+    db_name = config['db_name']
 
 db = Database()
 
@@ -23,5 +26,6 @@ class Wallet(db.Entity):
     type = Required(str)
 
 
-db.bind(provider='sqlite', filename=db_path, create_db=True)
+db.bind(provider='postgres', user=db_user,
+        password=db_pass, host=db_host, database=db_name)
 db.generate_mapping(create_tables=True)
