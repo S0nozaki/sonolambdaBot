@@ -59,6 +59,8 @@ def scrap_symbol_data(exchange, symbol):
     options = Options()
     options.headless = True
     options.binary_location = CHROME_PATH
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--no-sandbox")
     driver = webdriver.Chrome(
         options=options, service=web_service)
     driver.implicitly_wait(10)
