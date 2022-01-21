@@ -210,6 +210,9 @@ def ggal(update, context):
     coti(update, context)
 
 
+PORT = int(os.getenv('PORT', 5000))
+
+
 def main():
     updater = Updater(BOT_TOKEN, use_context=True)
     updater.dispatcher.add_handler(CommandHandler("start", start))
@@ -221,7 +224,8 @@ def main():
     updater.dispatcher.add_handler(CommandHandler("coti", coti))
     updater.dispatcher.add_handler(CommandHandler("wallet", wallet))
 
-    updater.start_polling()
+    updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=BOT_TOKEN)
+    updater.bot.set_webhook('https://sonolambdabot.herokuapp.com/' + BOT_TOKEN)
     print("Listening")
 
     updater.idle()
