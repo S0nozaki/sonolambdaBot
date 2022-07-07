@@ -68,9 +68,9 @@ def scrap_symbol_data(exchange, symbol):
         "https://es.tradingview.com/chart/?symbol=" + exchange + "%3A" + symbol)
     time.sleep(2)
     price = driver.find_elements(By.CLASS_NAME,
-                                 "valueValue-1WIwNaDF")[4].get_attribute("innerText")
+                                 "valueValue-OYqjX7Sg")[4].get_attribute("innerText")
     delta = driver.find_elements(By.CLASS_NAME,
-                                 "valueValue-1WIwNaDF")[7].get_attribute("innerText").split(' ')[1].strip("()")
+                                 "valueValue-OYqjX7Sg")[7].get_attribute("innerText").split(' ')[1].strip("()")
     driver.close()
     return {'symbol': symbol, 'exchange': exchange, 'price': price, 'delta': delta}
 
