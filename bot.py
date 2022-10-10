@@ -148,22 +148,7 @@ def help(update, context):
 
 
 def dolar(update, context):
-    URL = 'https://www.dolarsi.com/api/api.php?type=valoresprincipales'
-    json = requests.get(URL).json()
-    text = ""
-    for dolar in json:
-        nombredolar = dolar['casa']['nombre']
-        if(not nombredolar in ['Dolar Soja', 'Bitcoin', 'Dolar turista', 'Argentina', 'Dolar', 'Dolar Oficial']):
-            nombredolar = nombredolar[6:]
-            variacion = dolar['casa']['variacion']
-            compra = dolar['casa']['compra'][:-1]
-            venta = dolar['casa']['venta'][:-1]
-            text += inspect.cleandoc(f"""
-                    {nombredolar} {variacion}%
-                    Compra {compra}   Venta {venta}
-                """)
-            text += '\n'
-    reply(update.message, text)
+    reply(update.message, get_dolar())
 
 
 def hola(update, context):
