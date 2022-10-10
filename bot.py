@@ -74,7 +74,7 @@ def format_message(symbols_data):
     message = ""
     for symbol in symbols_data:
         message += symbol['symbol'] + " (" + symbol['exchange'] + ") " + symbol['price'] + \
-            " " + symbol['delta'] + " " + emoji_picker(symbol['delta'] + "\n")
+            " " + symbol['delta'] + " " + emoji_picker(symbol['delta']) + "\n"
     return message
 
 
