@@ -43,6 +43,5 @@ def update_wallet(id, symbol, type):
 
 @db_session
 def check_wallet(id):
-    symbols_tracked = select((p.symbol, p.type)
-                             for p in Wallet if p.user_id == id)[:]
+    symbols_tracked = select(p.symbol for p in Wallet if p.user_id == id)[:]
     return symbols_tracked

@@ -1,17 +1,13 @@
 from telegram.ext import Updater, CommandHandler
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
 from dotenv import load_dotenv
 import os
 import json
 import inspect
 import requests
-import time
 
 # local imports
 from controller import *
+from scrapper import get_stocks_data, get_dolar
 
 
 load_dotenv()
@@ -20,8 +16,6 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 CHROME_PATH = os.getenv('CHROME_PATH')
 DRIVER_PATH = os.getenv('DRIVER_PATH')
 STOCK_EXCHANGES = json.loads(os.getenv('STOCK_EXCHANGES'))
-
-web_service = Service(executable_path=DRIVER_PATH, log_path=None)
 
 
 def get_user_name(user):
@@ -50,61 +44,38 @@ def get_symbol_exchanges(symbol):
             symbol + '&hl=1&exchange=' + exchange + '&lang=es&type=&domain=production'
         response = requests.get(URL).json()
         if response:
-            exchanges.append((response[0]['symbol'].translate(
-                str.maketrans(dict.fromkeys('</em>'))), response[0]['exchange']))
+            exchanges.append(response[0]['exchange'] + ":" + response[0]
+                             ['symbol'].translate(str.maketrans(dict.fromkeys('</em>'))))
     return exchanges
 
 
-def scrap_symbol_data(exchange, symbol):
-    options = Options()
-    options.headless = True
-    options.binary_location = CHROME_PATH
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--no-sandbox")
-    driver = webdriver.Chrome(
-        options=options, service=web_service)
-    driver.implicitly_wait(10)
-    driver.get(
-        "https://es.tradingview.com/chart/?symbol=" + exchange + "%3A" + symbol)
-    time.sleep(2)
-    price = driver.find_elements(By.CLASS_NAME,
-                                 "valueValue-OYqjX7Sg")[4].get_attribute("innerText")
-    delta = driver.find_elements(By.CLASS_NAME,
-                                 "valueValue-OYqjX7Sg")[7].get_attribute("innerText").split(' ')[1].strip("()")
-    driver.close()
-    return {'symbol': symbol, 'exchange': exchange, 'price': price, 'delta': delta}
-
-
-def get_stock_data(symbol):
-    response = ""
-    symbol_exchanges = get_symbol_exchanges(symbol)
-    if not symbol_exchanges:
-        response = "No se encuentra el ticker en ningun exchange"
-    else:
-        for symbol, exchange in symbol_exchanges:
-            data = scrap_symbol_data(exchange, symbol)
-            emoji = emoji_picker(data['delta'])
-            response += f"\n{symbol} ({exchange}) {data['price']} ({data['delta']}) {emoji}"
-    return response
+def get_symbols_data(symbols):
+    requested_stocks = []
+    cryptos_data = []
+    for symbol in symbols:
+        crypto_data = get_crypto_data(symbol)
+        if crypto_data:
+            cryptos_data.append(crypto_data)
+        else:
+            symbol_exchanges = get_symbol_exchanges(symbol)
+            for symbol in symbol_exchanges:
+                requested_stocks.append(symbol)
+    stocks_data = get_stocks_data(requested_stocks)
+    return cryptos_data + stocks_data
 
 
 def coti(update, context):
-    response = ""
     symbols = update.message.text.upper().split(' ')[1:]
-    for symbol in symbols:
-        if is_crypto(symbol):
-            response += get_crypto_data(symbol)
-        elif not is_db_updated():
-            reset_table_data(Pairs)
-            update_crypto_db(get_crypto_pairs())
-            print("DB updated")
-            if is_crypto(symbol):
-                response += get_crypto_data(symbol)
-            else:
-                response += get_stock_data(symbol)
-        else:
-            response += get_stock_data(symbol)
-    reply(update.message, response)
+    symbols_data = get_symbols_data(symbols)
+    reply(update.message, format_message(symbols_data))
+
+
+def format_message(symbols_data):
+    message = ""
+    for symbol in symbols_data:
+        message += symbol['symbol'] + " (" + symbol['exchange'] + ") " + symbol['price'] + \
+            " " + symbol['delta'] + " " + emoji_picker(symbol['delta'] + "\n")
+    return message
 
 
 def emoji_picker(price_change):
@@ -130,10 +101,13 @@ def get_crypto_pairs():
 def get_crypto_data(symbol):
     price_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=' + symbol
     json = requests.get(price_URL).json()
-    daily_delta_URL = 'https://api.binance.com/api/v3/ticker/24hr?symbol=' + symbol
-    json['delta'] = requests.get(daily_delta_URL).json()['priceChangePercent']
-    emoji = emoji_picker(json['delta'])
-    return f"\n{json['symbol']} {json['price']} ({json['delta']}%) {emoji}"
+    if 'code' in json:
+        return {}
+    else:
+        daily_delta_URL = 'https://api.binance.com/api/v3/ticker/24hr?symbol=' + symbol
+        json['delta'] = requests.get(daily_delta_URL).json()[
+            'priceChangePercent']
+        return {"symbol": json['symbol'], "exchange": "BINANCE", "price": json['price'], "delta": json['delta']}
 
 
 def wallet(update, context):
@@ -141,13 +115,8 @@ def wallet(update, context):
     user_message = update.message.text.upper().split(' ')
     if len(user_message) == 1:
         symbols_tracked = check_wallet(user_id)
-        response = ""
-        for symbol, type in symbols_tracked:
-            if type == "crypto":
-                response += get_crypto_data(symbol)
-            else:
-                response += get_stock_data(symbol)
-        reply(update.message, response)
+        symbols_data = get_symbols_data(symbols_tracked)
+        reply(update.message, format_message(symbols_data))
     else:
         for symbol_to_modify in user_message[1:]:
             if is_crypto(symbol_to_modify):
