@@ -32,6 +32,46 @@ def get_dolar():
     return response
 
 
+def get_symbols_data(symbols):
+    requested_stocks = []
+    cryptos_data = []
+    for symbol in symbols:
+        crypto_data = get_crypto_data(symbol)
+        if crypto_data:
+            cryptos_data.append(crypto_data)
+        else:
+            symbol_exchanges = get_symbol_exchanges(symbol)
+            for symbol in symbol_exchanges:
+                requested_stocks.append(symbol)
+    stocks_data = get_stocks_data(requested_stocks)
+    return format_message(cryptos_data + stocks_data)
+
+
+def get_symbol_exchanges(symbol):
+    STOCK_EXCHANGES = json.loads(os.getenv('STOCK_EXCHANGES'))
+    exchanges = []
+    for exchange in STOCK_EXCHANGES:
+        URL = 'https://symbol-search.tradingview.com/symbol_search/?text=' + \
+            symbol + '&hl=1&exchange=' + exchange + '&lang=es&type=&domain=production'
+        response = requests.get(URL).json()
+        if response:
+            exchanges.append(response[0]['exchange'] + ":" + response[0]
+                             ['symbol'].translate(str.maketrans(dict.fromkeys('</em>'))))
+    return exchanges
+
+
+def get_crypto_data(symbol):
+    price_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=' + symbol
+    json = requests.get(price_URL).json()
+    if 'code' in json:
+        return {}
+    else:
+        daily_delta_URL = 'https://api.binance.com/api/v3/ticker/24hr?symbol=' + symbol
+        json['delta'] = requests.get(daily_delta_URL).json()[
+            'priceChangePercent']
+        return {"symbol": json['symbol'], "exchange": "BINANCE", "price": json['price'], "delta": json['delta']}
+
+
 def get_stocks_data(symbols):
     url = "https://www.tradingview.com/accounts/signin/"
     USER = os.getenv("TW_USER")
@@ -102,6 +142,25 @@ def request_symbols_data(ws, session, chart_session, symbols):
             sendMessage(ws, "modify_series", [
                         chart_session, "sds_1", "s"+str(counter), "sds_sym_"+str(counter), "1D", ""])
         previous_symbol = symbol
+
+
+def format_message(symbols_data):
+    message = ""
+    for symbol in symbols_data:
+        message += symbol['symbol'] + " (" + symbol['exchange'] + ") " + symbol['price'] + \
+            " " + symbol['delta'] + " " + emoji_picker(symbol['delta']) + "\n"
+    return message
+
+
+def emoji_picker(price_change):
+    emoji = ""
+    if price_change.strip("-+−%") == "0.00":
+        emoji = "😐"
+    elif "-" in price_change or "−" in price_change:
+        emoji = "😨"
+    else:
+        emoji = "🚀"
+    return emoji
 
 
 def sendMessage(ws, func, args):

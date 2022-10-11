@@ -1,13 +1,12 @@
 from telegram.ext import Updater, CommandHandler
 from dotenv import load_dotenv
 import os
-import json
 import inspect
 import requests
 
 # local imports
 from controller import *
-from scrapper import get_stocks_data, get_dolar
+from scrapper import get_symbols_data, get_dolar, get_symbol_exchanges
 
 
 load_dotenv()
@@ -15,7 +14,6 @@ load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 CHROME_PATH = os.getenv('CHROME_PATH')
 DRIVER_PATH = os.getenv('DRIVER_PATH')
-STOCK_EXCHANGES = json.loads(os.getenv('STOCK_EXCHANGES'))
 
 
 def get_user_name(user):
@@ -37,56 +35,9 @@ def reply(message, response):
     message.reply_text(response)
 
 
-def get_symbol_exchanges(symbol):
-    exchanges = []
-    for exchange in STOCK_EXCHANGES:
-        URL = 'https://symbol-search.tradingview.com/symbol_search/?text=' + \
-            symbol + '&hl=1&exchange=' + exchange + '&lang=es&type=&domain=production'
-        response = requests.get(URL).json()
-        if response:
-            exchanges.append(response[0]['exchange'] + ":" + response[0]
-                             ['symbol'].translate(str.maketrans(dict.fromkeys('</em>'))))
-    return exchanges
-
-
-def get_symbols_data(symbols):
-    requested_stocks = []
-    cryptos_data = []
-    for symbol in symbols:
-        crypto_data = get_crypto_data(symbol)
-        if crypto_data:
-            cryptos_data.append(crypto_data)
-        else:
-            symbol_exchanges = get_symbol_exchanges(symbol)
-            for symbol in symbol_exchanges:
-                requested_stocks.append(symbol)
-    stocks_data = get_stocks_data(requested_stocks)
-    return cryptos_data + stocks_data
-
-
 def coti(update, context):
     symbols = update.message.text.upper().split(' ')[1:]
-    symbols_data = get_symbols_data(symbols)
-    reply(update.message, format_message(symbols_data))
-
-
-def format_message(symbols_data):
-    message = ""
-    for symbol in symbols_data:
-        message += symbol['symbol'] + " (" + symbol['exchange'] + ") " + symbol['price'] + \
-            " " + symbol['delta'] + " " + emoji_picker(symbol['delta']) + "\n"
-    return message
-
-
-def emoji_picker(price_change):
-    emoji = ""
-    if price_change.strip("-+−%") == "0.00":
-        emoji = "😐"
-    elif "-" in price_change or "−" in price_change:
-        emoji = "😨"
-    else:
-        emoji = "🚀"
-    return emoji
+    reply(update.message, get_symbols_data(symbols))
 
 
 def get_crypto_pairs():
@@ -98,25 +49,12 @@ def get_crypto_pairs():
     return symbols
 
 
-def get_crypto_data(symbol):
-    price_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=' + symbol
-    json = requests.get(price_URL).json()
-    if 'code' in json:
-        return {}
-    else:
-        daily_delta_URL = 'https://api.binance.com/api/v3/ticker/24hr?symbol=' + symbol
-        json['delta'] = requests.get(daily_delta_URL).json()[
-            'priceChangePercent']
-        return {"symbol": json['symbol'], "exchange": "BINANCE", "price": json['price'], "delta": json['delta']}
-
-
 def wallet(update, context):
     user_id = update.message.from_user.id
     user_message = update.message.text.upper().split(' ')
     if len(user_message) == 1:
         symbols_tracked = check_wallet(user_id)
-        symbols_data = get_symbols_data(symbols_tracked)
-        reply(update.message, format_message(symbols_data))
+        reply(update.message, get_symbols_data(symbols_tracked))
     else:
         for symbol_to_modify in user_message[1:]:
             if is_crypto(symbol_to_modify):
