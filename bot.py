@@ -4,7 +4,7 @@ import os
 import inspect
 
 # local imports
-from controller import *
+from db_controller import update_wallet, check_wallet
 from scrapper import get_symbols_data, get_dolar, get_symbol_exchanges, get_crypto_data
 
 
