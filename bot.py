@@ -2,7 +2,6 @@ from telegram.ext import Updater, CommandHandler
 from dotenv import load_dotenv
 import os
 import inspect
-import requests
 
 # local imports
 from controller import *
@@ -38,15 +37,6 @@ def reply(message, response):
 def coti(update, context):
     symbols = update.message.text.upper().split(' ')[1:]
     reply(update.message, get_symbols_data(symbols))
-
-
-def get_crypto_pairs():
-    symbol_pairs_URL = 'https://api.binance.com/api/v3/exchangeInfo'
-    symbols = []
-    json = requests.get(symbol_pairs_URL).json()
-    for pair in json['symbols']:
-        symbols.append(pair['symbol'])
-    return symbols
 
 
 def wallet(update, context):
