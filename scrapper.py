@@ -62,7 +62,8 @@ def get_symbol_exchanges(symbol):
 
 def get_crypto_data(symbol):
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0",
+        "Host": "api.binance.com"
     }
     price_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=' + symbol
     json = requests.get(url=price_URL, headers=headers).json()
