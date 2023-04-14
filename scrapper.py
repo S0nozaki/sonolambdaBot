@@ -61,6 +61,12 @@ def get_symbol_exchanges(symbol):
 
 
 def get_crypto_data(symbol):
+    return get_kucoin_cripto_data(symbol)
+
+
+def get_binance_cripto_data(symbol):
+    # Unable to use Binance from US servers, replaced by kucoin until a EU based server is available
+    symbol = symbol.strip("-")
     domain = os.getenv("BINANCE_DOMAIN")
     price_path = os.getenv("BINANCE_PRICE_PATH")
     delta_path = os.getenv("BINANCE_DELTA_PATH")
@@ -77,6 +83,16 @@ def get_crypto_data(symbol):
         json['delta'] = requests.get(url=daily_delta_URL, headers=headers).json()[
             'priceChangePercent']
         return {"symbol": json['symbol'], "exchange": "BINANCE", "price": json['price'], "delta": json['delta']}
+
+
+def get_kucoin_cripto_data(symbol):
+    domain = os.getenv("KUCOIN_DOMAIN")
+    path = os.getenv("KUCOIN_PATH")
+    json = requests.get(domain + path + symbol).json()["data"]
+    if json["last"]:
+        return {"symbol": json['symbol'], "exchange": "Kucoin", "price": json['last'], "delta": json['changeRate']}
+    else:
+        return {}
 
 
 def get_stocks_data(symbols):
