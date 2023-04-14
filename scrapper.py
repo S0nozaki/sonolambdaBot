@@ -61,13 +61,16 @@ def get_symbol_exchanges(symbol):
 
 
 def get_crypto_data(symbol):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0"
+    }
     price_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=' + symbol
-    json = requests.get(price_URL).json()
+    json = requests.get(url=price_URL, headers=headers).json()
     if 'code' in json:
         return {}
     else:
         daily_delta_URL = 'https://api.binance.com/api/v3/ticker/24hr?symbol=' + symbol
-        json['delta'] = requests.get(daily_delta_URL).json()[
+        json['delta'] = requests.get(url=daily_delta_URL, headers=headers).json()[
             'priceChangePercent']
         return {"symbol": json['symbol'], "exchange": "BINANCE", "price": json['price'], "delta": json['delta']}
 
