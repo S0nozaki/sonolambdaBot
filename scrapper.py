@@ -66,7 +66,7 @@ def get_crypto_data(symbol):
     delta_path = os.getenv("BINANCE_DELTA_PATH")
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0",
-        "Host": "api.binance.com"
+        "Host": domain[8:]
     }
     price_URL = domain + price_path + symbol
     json = requests.get(url=price_URL, headers=headers).json()
