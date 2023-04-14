@@ -68,7 +68,7 @@ def get_crypto_data(symbol):
     price_URL = 'https://api.binance.com/api/v3/ticker/price?symbol=' + symbol
     json = requests.get(url=price_URL, headers=headers).json()
     if 'code' in json:
-        return {}
+        return {"symbol": symbol, "exchange": json, "price": "0.00", "delta": "-0.00"}
     else:
         daily_delta_URL = 'https://api.binance.com/api/v3/ticker/24hr?symbol=' + symbol
         json['delta'] = requests.get(url=daily_delta_URL, headers=headers).json()[
