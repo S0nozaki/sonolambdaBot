@@ -11,8 +11,6 @@ from scrapper import get_symbols_data, get_dolar, get_symbol_exchanges, get_cryp
 load_dotenv()
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
-CHROME_PATH = os.getenv('CHROME_PATH')
-DRIVER_PATH = os.getenv('DRIVER_PATH')
 
 
 def get_user_name(user):
