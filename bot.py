@@ -6,7 +6,7 @@ import requests
 
 # local imports
 from controller import *
-from scrapper import get_symbols_data, get_dolar, get_symbol_exchanges
+from scrapper import get_symbols_data, get_dolar, get_symbol_exchanges, get_crypto_data
 
 
 load_dotenv()
@@ -57,7 +57,7 @@ def wallet(update, context):
         reply(update.message, get_symbols_data(symbols_tracked))
     else:
         for symbol_to_modify in user_message[1:]:
-            if is_crypto(symbol_to_modify):
+            if get_crypto_data(symbol_to_modify):
                 update_wallet(user_id, symbol_to_modify, "crypto")
             elif get_symbol_exchanges(symbol_to_modify):
                 update_wallet(user_id, symbol_to_modify, "stock")
