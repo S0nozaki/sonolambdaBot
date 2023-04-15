@@ -89,7 +89,7 @@ def get_binance_cripto_data(symbol):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"
     }
     price_URL = domain + price_path + symbol
-    return price_URL + " headers: " + headers
+    return price_URL + " headers: " + str(headers)
     try:
         r = requests.get(url=price_URL, headers=headers)
         json = r.json()
