@@ -91,7 +91,7 @@ def get_binance_cripto_data(symbol):
     price_URL = domain + price_path + symbol
     json = requests.get(url=price_URL, headers=headers).json()
     if 'code' in json:
-        return {"symbol": symbol, "error": json}
+        return {"symbol": symbol, "exchange": "BINANCE", "error": json}
     else:
         daily_delta_URL = domain + delta_path + symbol
         json['delta'] = requests.get(url=daily_delta_URL, headers=headers).json()[
@@ -122,7 +122,7 @@ def get_kucoin_cripto_data(symbol):
     if json["last"]:
         return {"symbol": json['symbol'], "exchange": "Kucoin", "price": json['last'], "delta": json['changeRate']}
     else:
-        return {"symbol": symbol, "error": json}
+        return {"symbol": symbol, "exchange": "Kucoin", "error": json}
 
 
 def get_stocks_data(symbols):
