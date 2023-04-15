@@ -37,7 +37,7 @@ def get_symbols_data(symbols):
     cryptos_data = []
     for symbol in symbols:
         crypto_data = get_crypto_data(symbol)
-        if not crypto_data['error']:
+        if not 'error' in crypto_data:
             cryptos_data.append(crypto_data)
         else:
             symbol_exchanges = get_symbol_exchanges(symbol)
@@ -68,7 +68,6 @@ def get_crypto_data(symbol):
 
 
 def get_binance_cripto_data(symbol):
-    # Unable to use Binance from US servers, replaced by kucoin until a EU based server is available
     symbol = symbol.replace('-', '')
     domain = os.getenv("BINANCE_DOMAIN")
     price_path = os.getenv("BINANCE_PRICE_PATH").replace('"', '')
@@ -91,7 +90,7 @@ def get_binance_cripto_data(symbol):
     price_URL = domain + price_path + symbol
     json = requests.get(url=price_URL, headers=headers).json()
     if 'code' in json:
-        return {"symbol": symbol, "exchange": "BINANCE", "error": json}
+        return {"symbol": symbol, "exchange": "BINANCE", "error": str(json)}
     else:
         daily_delta_URL = domain + delta_path + symbol
         json['delta'] = requests.get(url=daily_delta_URL, headers=headers).json()[
@@ -101,7 +100,7 @@ def get_binance_cripto_data(symbol):
 
 def get_kucoin_cripto_data(symbol):
     domain = os.getenv("KUCOIN_DOMAIN")
-    path = os.getenv("KUCOIN_PATH")
+    path = os.getenv("KUCOIN_PATH").replace('"', '')
     headers = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
@@ -122,7 +121,7 @@ def get_kucoin_cripto_data(symbol):
     if json["last"]:
         return {"symbol": json['symbol'], "exchange": "Kucoin", "price": json['last'], "delta": json['changeRate']}
     else:
-        return {"symbol": symbol, "exchange": "Kucoin", "error": json}
+        return {"symbol": symbol, "exchange": "Kucoin", "error": str(json)}
 
 
 def get_stocks_data(symbols):
