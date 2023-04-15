@@ -61,12 +61,15 @@ def get_symbol_exchanges(symbol):
 
 
 def get_crypto_data(symbol):
+    crypto_data = get_binance_cripto_data(symbol)
+    if crypto_data:
+        return crypto_data
     return get_kucoin_cripto_data(symbol)
 
 
 def get_binance_cripto_data(symbol):
     # Unable to use Binance from US servers, replaced by kucoin until a EU based server is available
-    symbol = symbol.strip("-")
+    symbol = symbol.replace('-', '')
     domain = os.getenv("BINANCE_DOMAIN")
     price_path = os.getenv("BINANCE_PRICE_PATH")
     delta_path = os.getenv("BINANCE_DELTA_PATH")
