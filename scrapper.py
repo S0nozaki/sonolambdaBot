@@ -71,12 +71,19 @@ def get_binance_cripto_data(symbol):
     price_path = os.getenv("BINANCE_PRICE_PATH")
     delta_path = os.getenv("BINANCE_DELTA_PATH")
     headers = {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Language": "es-AR,es;q=0.8,en-US;q=0.5,en;q=0.3",
+        "Connection": "keep-alive",
+        "DNT": "1",
         "Host": domain[8:],
         "Sec-Fetch-Dest": "document",
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "none",
         "Sec-Fetch-User": "?1",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0"
+        "TE": "trailers",
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"
     }
     price_URL = domain + price_path + symbol
     json = requests.get(url=price_URL, headers=headers).json()
@@ -96,12 +103,16 @@ def get_kucoin_cripto_data(symbol):
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
         "Accept-Language": "es-AR,es;q=0.8,en-US;q=0.5,en;q=0.3",
+        "Connection": "keep-alive",
+        "DNT": "1",
         "Host": domain[8:],
         "Sec-Fetch-Dest": "document",
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "none",
         "Sec-Fetch-User": "?1",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0"
+        "TE": "trailers",
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"
     }
     json = requests.get(url=domain + path + symbol,
                         headers=headers).json()["data"]
