@@ -37,7 +37,7 @@ def get_symbols_data(symbols):
     cryptos_data = []
     for symbol in symbols:
         crypto_data = get_crypto_data(symbol)
-        if crypto_data:
+        if not crypto_data['error']:
             cryptos_data.append(crypto_data)
         else:
             symbol_exchanges = get_symbol_exchanges(symbol)
@@ -91,7 +91,7 @@ def get_binance_cripto_data(symbol):
     price_URL = domain + price_path + symbol
     json = requests.get(url=price_URL, headers=headers).json()
     if 'code' in json:
-        return {}
+        return {"symbol": symbol, "error": json}
     else:
         daily_delta_URL = domain + delta_path + symbol
         json['delta'] = requests.get(url=daily_delta_URL, headers=headers).json()[
@@ -122,7 +122,7 @@ def get_kucoin_cripto_data(symbol):
     if json["last"]:
         return {"symbol": json['symbol'], "exchange": "Kucoin", "price": json['last'], "delta": json['changeRate']}
     else:
-        return {}
+        return {"symbol": symbol, "error": json}
 
 
 def get_stocks_data(symbols):
@@ -200,8 +200,12 @@ def request_symbols_data(ws, session, chart_session, symbols):
 def format_message(symbols_data):
     message = ""
     for symbol in symbols_data:
-        message += symbol['symbol'] + " (" + symbol['exchange'] + ") " + symbol['price'] + \
-            " " + symbol['delta'] + " " + emoji_picker(symbol['delta']) + "\n"
+        if symbol['error']:
+            message += symbol[symbol] + " error: " + symbol['error']
+        else:
+            message += symbol['symbol'] + " (" + symbol['exchange'] + ") " + symbol['price'] + \
+                " " + symbol['delta'] + " " + \
+                emoji_picker(symbol['delta']) + "\n"
     return message
 
 
