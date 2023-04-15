@@ -88,7 +88,12 @@ def get_binance_cripto_data(symbol):
 def get_kucoin_cripto_data(symbol):
     domain = os.getenv("KUCOIN_DOMAIN")
     path = os.getenv("KUCOIN_PATH")
-    json = requests.get(domain + path + symbol).json()["data"]
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0",
+        "Host": domain[8:]
+    }
+    json = requests.get(url=domain + path + symbol,
+                        headers=headers).json()["data"]
     if json["last"]:
         return {"symbol": json['symbol'], "exchange": "Kucoin", "price": json['last'], "delta": json['changeRate']}
     else:
