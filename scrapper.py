@@ -70,7 +70,6 @@ def get_crypto_data(symbol):
 def get_binance_cripto_data(symbol):
     # Unable to use Binance from US servers, replaced by kucoin until a EU based server is available
     symbol = symbol.replace('-', '')
-    return symbol
     domain = os.getenv("BINANCE_DOMAIN")
     price_path = os.getenv("BINANCE_PRICE_PATH")
     delta_path = os.getenv("BINANCE_DELTA_PATH")
@@ -90,6 +89,7 @@ def get_binance_cripto_data(symbol):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"
     }
     price_URL = domain + price_path + symbol
+    return price_URL + " headers: " + headers
     try:
         r = requests.get(url=price_URL, headers=headers)
         json = r.json()
