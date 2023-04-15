@@ -93,6 +93,11 @@ def ggal(update, context):
     coti(update, context)
 
 
+def test(update, context):
+    symbols = update.message.text.upper().split(' ')[1:]
+    reply(update.message, symbols)
+
+
 PORT = int(os.getenv('PORT', 5000))
 
 
@@ -104,6 +109,7 @@ def main():
     updater.dispatcher.add_handler(CommandHandler("dolar", dolar))
     updater.dispatcher.add_handler(CommandHandler("pampa", pampa))
     updater.dispatcher.add_handler(CommandHandler("ggal", ggal))
+    updater.dispatcher.add_handler(CommandHandler("test", test))
     updater.dispatcher.add_handler(CommandHandler("coti", coti))
     updater.dispatcher.add_handler(CommandHandler("wallet", wallet))
 
