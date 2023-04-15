@@ -95,7 +95,7 @@ def ggal(update, context):
 
 def test(update, context):
     symbols = update.message.text.upper().split(' ')[1:]
-    reply(update.message, get_crypto_data(symbols))
+    reply(update.message, get_crypto_data(symbols[0]))
 
 
 PORT = int(os.getenv('PORT', 5000))
