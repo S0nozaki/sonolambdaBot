@@ -90,7 +90,6 @@ def get_binance_cripto_data(symbol):
     }
     price_URL = domain + price_path + symbol
     json = requests.get(url=price_URL, headers=headers).json()
-    return str(json)
     if 'code' in json:
         return {"symbol": symbol, "exchange": "BINANCE", "error": json}
     else:
