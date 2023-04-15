@@ -199,7 +199,7 @@ def request_symbols_data(ws, session, chart_session, symbols):
 def format_message(symbols_data):
     message = ""
     for symbol in symbols_data:
-        if symbol['error']:
+        if 'error' in symbol:
             message += symbol[symbol] + " error: " + symbol['error']
         else:
             message += symbol['symbol'] + " (" + symbol['exchange'] + ") " + symbol['price'] + \
