@@ -12,6 +12,7 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 WEB_URL = os.getenv('WEB_URL')
+ENVIRONMENT = os.getenv('ENVIRONMENT')
 
 
 def get_user_name(user):
@@ -113,8 +114,12 @@ def main():
     updater.dispatcher.add_handler(CommandHandler("coti", coti))
     updater.dispatcher.add_handler(CommandHandler("wallet", wallet))
 
-    updater.start_webhook(listen="0.0.0.0", port=int(PORT), url_path=BOT_TOKEN)
-    updater.bot.set_webhook(WEB_URL + BOT_TOKEN)
+    if ENVIRONMENT == 'local':
+        updater.start_polling()
+    else:
+        updater.start_webhook(
+            listen="0.0.0.0", port=int(PORT), url_path=BOT_TOKEN)
+        updater.bot.set_webhook(WEB_URL + BOT_TOKEN)
     print("Listening")
 
     updater.idle()
