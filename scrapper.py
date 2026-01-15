@@ -125,6 +125,8 @@ def get_kucoin_cripto_data(symbol):
 
 
 def get_stocks_data(symbols):
+    if(len(symbols) == 0):
+        return []
     url = "https://www.tradingview.com/accounts/signin/"
     USER = os.getenv("TW_USER")
     PASS = os.getenv("TW_PASS")
