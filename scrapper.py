@@ -51,12 +51,7 @@ def get_symbol_exchanges(symbol):
     STOCK_EXCHANGES = json.loads(os.getenv('STOCK_EXCHANGES'))
     exchanges = []
     for exchange in STOCK_EXCHANGES:
-        URL = 'https://symbol-search.tradingview.com/symbol_search/?text=' + \
-            symbol + '&hl=1&exchange=' + exchange + '&lang=es&type=&domain=production'
-        response = requests.get(URL).json()
-        if response:
-            exchanges.append(response[0]['exchange'] + ":" + response[0]
-                             ['symbol'].translate(str.maketrans(dict.fromkeys('</em>'))))
+        exchanges.append(exchange + ":" + symbol)
     return exchanges
 
 
